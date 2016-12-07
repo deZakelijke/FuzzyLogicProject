@@ -11,10 +11,10 @@ function lines = houghExtract(image)
     %plot(x,y,'s', 'color','white');
     %hold off;
     
+    hold off;
     
     lines = houghlines(BW, T, R, P, 'FillGap', 100, 'MinLength',7);
     figure, imshow(image), hold on;
-    length(lines)
     for k = 1:length(lines)
         xy = [lines(k).point1; lines(k).point2];
         plot(xy(:,1), xy(:,2), 'LineWidth', 2, 'Color', 'green');
