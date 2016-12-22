@@ -43,7 +43,7 @@ class Feature:
             return []
 
         # First we apply binary erosion to get a skeleton of the image.
-        image = binary_erosion(np.ceil(image)).astyp(image.dtype)
+        image = binary_erosion(np.ceil(image)).astype(image.dtype)
 
         features = set()
 
