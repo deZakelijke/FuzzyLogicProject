@@ -1,6 +1,7 @@
 import tensorflow as tf
 import numpy as np
 from tqdm import tqdm
+import os.path
 
 class DataSet:
     index = 0
@@ -35,9 +36,13 @@ class DataSet:
 
 def train_neural_net(train, test=None):
     x = tf.placeholder(tf.float32, [None, 16])
-    W = tf.Variable(tf.zeros([16, 10]))
-    b = tf.Variable(tf.zeros([10]))
-    y = tf.matmul(x, W) + b
+    W = tf.Variable(tf.random_normal([16, 13], stddev=0.35))
+    b = tf.Variable(tf.constant(0.1, shape=[13]))
+    l1 = tf.matmul(x, W) + b
+    l1 = tf.nn.relu(l1)
+    W2 = tf.Variable(tf.random_normal([13, 10], stddev=0.35))
+    b2 = tf.Variable(tf.constant(0.1, shape=[10]))
+    y = tf.matmul(l1, W2) + b2
 
     y_ = tf.placeholder(tf.float32, [None, 10])
 
@@ -45,12 +50,20 @@ def train_neural_net(train, test=None):
     train_step = tf.train.GradientDescentOptimizer(0.5).minimize(cross_entropy)
 
     sess = tf.InteractiveSession()
+    saver = tf.train.Saver({'W': W, 'b' : b, 'W2' : W2, 'b2' : b2})
 
-    tf.global_variables_initializer().run()
+    if os.path.isfile("./model.cpkt.meta"):
+        print("Loading previous model.")
+        saver.restore(sess, "./model.cpkt")
+    else:
+        print("Initializing new model.")
+        sess.run(tf.global_variables_initializer())
 
-    for i in tqdm(xrange(50000)):
-        batch_xs, batch_ys = train.next_batch(1000)
+    for i in tqdm(xrange(5000)):
+        batch_xs, batch_ys = train.next_batch(10000)
         sess.run(train_step, feed_dict={x: batch_xs, y_: batch_ys})
+
+    saver.save(sess, "./model.cpkt")
 
     if test != None:
         # Test trained model
@@ -59,7 +72,7 @@ def train_neural_net(train, test=None):
         print(sess.run(accuracy, feed_dict={x: test.inputs,
                                             y_: test.labels}))
 
-    return sess
+    return (x, y)
 
-def classify(network, input):
-    pass
+def classify((x, network), input):
+    return network.eval(feed_dict={x : input})

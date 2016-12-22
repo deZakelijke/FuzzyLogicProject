@@ -1,9 +1,8 @@
-
 import numpy as np
 from scipy.ndimage.morphology import binary_erosion
 
 class Feature:
-    def __init__(self, curvature, length, x_position, y_position, orientation, size):
+    def __init__(self, curvature, x_position, y_position, orientation, size):
         self.shape = Shape(curvature)
 
         self.orientation = Orientation(orientation)
@@ -20,6 +19,17 @@ class Feature:
         vector[13:16] = self.size.feature_vector()
 
         return np.array(vector, dtype=np.float64)
+
+    @staticmethod
+    def from_vector(vector):
+        f = Feature(0, 0, 0, 0, 0)
+        f.shape = Shape.from_vector(vector[0:3])
+        f.orientation = Orientation.from_vector(vector[3:7])
+        f.x_position = XPosition.from_vector(vector[7:10])
+        f.y_position = YPosition.from_vector(vector[10:13])
+        f.size = Size.from_vector(vector[13:16])
+
+        return f
 
     def __eq__(self, other):
         return (other.shape == self.shape and other.orientation == self.orientation and
@@ -42,9 +52,6 @@ class Feature:
         if (len(image.shape) <> 2):
             return []
 
-        # First we apply binary erosion to get a skeleton of the image.
-        image = binary_erosion(np.ceil(image)).astyp(image.dtype)
-
         features = set()
 
         # We apply the follow_shape function to all the nonzero pixels of the image.
@@ -58,12 +65,12 @@ class Feature:
                 (length, distance, (start, end), position) = follow_shape(point, image, with_mapping)
                 curvature = float(distance) / length
                 orientation = np.arctan2(start[0] - end[0], start[1] - end[1])
-                feature = Feature(curvature, length, position[0] / image.shape[0], position[1] / image.shape[1], orientation + np.pi, length / point_count)
+                feature = Feature(curvature, position[0] / image.shape[0], position[1] / image.shape[1], orientation + np.pi, length / point_count)
             else:
                 (length, distance, (start, end), position, mask) = follow_shape(point, image, with_mapping)
                 curvature = float(distance) / length
                 orientation = np.arctan2(start[0] - end[0], start[1] - end[1])
-                feature = Feature(curvature, length, position[0] / image.shape[0], position[1] / image.shape[1], orientation + np.pi, length / point_count)
+                feature = Feature(curvature, position[0] / image.shape[0], position[1] / image.shape[1], orientation + np.pi, length / point_count)
                 feature.mask = mask
                 
             
@@ -95,6 +102,15 @@ class Shape:
     def __str__(self):
         return "Shape(loop={0}, semiloop={1}, line={2})".format(self.loop, self.semiloop, self.line)
 
+    @staticmethod
+    def from_vector(vector):
+        s = Shape(0)
+        s.loop = vector[0]
+        s.semiloop = vector[1]
+        s.line = vector[2]
+
+        return s
+
 class Orientation:
     def __init__(self, orientation):
         self.right = max(trapezoid(-1, -1, 0.4, 1.25, orientation),
@@ -120,6 +136,16 @@ class Orientation:
     def __str__(self):
         return "Orientation(right={0}, left={1}, up={2}, down={3})".format(self.right, self.left, self.up, self.down)
 
+    @staticmethod
+    def from_vector(vector):
+        o = Orientation(0)
+        o.right = vector[0]
+        o.left = vector[1]
+        o.up = vector[2]
+        o.down = vector[3]
+
+        return o
+
 class YPosition:
     def __init__(self, position):
         self.high = trapezoid(0.65, 0.75, 2, 2, position)
@@ -141,6 +167,15 @@ class YPosition:
 
     def __str__(self):
         return "YPosition(high={0}, middle={1}, low={2})".format(self.high, self.middle, self.low)
+
+    @staticmethod
+    def from_vector(vector):
+        y = YPosition(0)
+        y.high = vector[0]
+        y.middle = vector[1]
+        y.low = vector[2]
+
+        return y
 
 class XPosition:
     def __init__(self, position):
@@ -164,6 +199,15 @@ class XPosition:
     def __str__(self):
         return "XPosition(left={0}, middle={1}, right={2})".format(self.left, self.middle, self.right)
 
+    @staticmethod
+    def from_vector(vector):
+        x = XPosition(0)
+        x.left = vector[0]
+        x.middle = vector[1]
+        x.right = vector[2]
+
+        return x
+
 class Size:
     def __init__(self, fraction):
         self.large = trapezoid(0.65, 0.75, 2, 2, fraction)
@@ -185,6 +229,16 @@ class Size:
 
     def __str__(self):
         return "Size(larg={0}, medium={1}, small={2})".format(self.large, self.medium, self.small)
+
+    @staticmethod
+    def from_vector(vector):
+        s = Size(0)
+
+        s.large = vector[0]
+        s.medium = vector[1]
+        s.large = vector[2]
+
+        return s
 
 def trapezoid(left_min, left_max, right_max, right_min, value):
     if (value < left_min):
