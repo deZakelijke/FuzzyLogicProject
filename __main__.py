@@ -64,15 +64,15 @@ def main():
 
     print("Found", len(features), "features.")
 
-    (features, labels) = group(features, labels)
+    #(features, labels) = group(features, labels)
 
     data = DataSet(features, labels)
 
-    test_data = DataSet(test_features, test_labels)
+    test_data = DataSet(test_features, spread(test_labels, test_lengths))
 
     print("Training neural net.")
 
-    network = train_neural_net(data)
+    network = train_neural_net(data, test_data)
 
     print("Testing with integral.")
 
@@ -107,15 +107,23 @@ def test(network, features, labels, lengths):
         s = fuzzy_integral(c)
 
         if p:
-            print(np.argmax(c))
             print(s)
             print(l)
             p = False
 
         if (np.argmax(s) == np.argmax(l)):
-            s += 1.0
+            score += 1.0
 
     return score / len(labels)
+
+def spread(xs, chunk_sizes):
+    ret = []
+
+    for (x, c) in zip(xs, chunk_sizes):
+        ret += [x] * c
+
+    return np.array(ret)
+    
 
 def chunk(xs, chunk_sizes):
     s = 0

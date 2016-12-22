@@ -13,7 +13,7 @@ class DataSet:
     def __init__(self, inputs, labels):
         self.inputs = inputs
         self.labels = labels
-        count = len(self.inputs)
+        self.count = len(self.inputs)
 
     def next_batch(self, batch_size):
         start = self.index
@@ -59,8 +59,8 @@ def train_neural_net(train, test=None):
         print("Initializing new model.")
         sess.run(tf.global_variables_initializer())
 
-    for i in tqdm(xrange(5000)):
-        batch_xs, batch_ys = train.next_batch(10000)
+    for i in tqdm(xrange(50000)):
+        batch_xs, batch_ys = train.next_batch(1000)
         sess.run(train_step, feed_dict={x: batch_xs, y_: batch_ys})
 
     saver.save(sess, "./model.cpkt")
